@@ -1,2 +1,3 @@
 # chewie-sandbox
-Test install of chewie app
+
+Simple hello-world Go application with a GitHub Actions workflow that tests the app output.
