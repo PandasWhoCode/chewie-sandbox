@@ -1,0 +1,29 @@
+name: Go Run Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  run-app-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run unit tests
+        run: go test ./...
+
+      - name: Run app and validate output
+        run: |
+          output="$(go run .)"
+          test "$output" = "Hello, world!"
