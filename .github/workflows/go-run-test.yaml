@@ -14,7 +14,7 @@ jobs:
         uses: pandaswhocode/initialize-github-job@c96d9edf7816b4f333b558f2e07fe81ebf1e822d # v1.3.0
         with:
           checkout: "true"
-          checkout-token: ${{ secrets.github-token }}
+          checkout-token: ${{ secrets.GITHUB_TOKEN }}
           checkout-ref: ${{ github.ref }}
           setup-go: true
 
@@ -34,7 +34,7 @@ jobs:
       test-type: "sdpt"
       test-asset: "9"
     secrets:
-      github-token: ${{ secrets.github-token }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
 
   output-chewie-response:
     needs: call-chewie-response
