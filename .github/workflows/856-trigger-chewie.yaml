@@ -67,7 +67,7 @@ permissions:
   contents: read
 
 env:
-  HOST: ${{ secrets.chewie-host }}
+  HOST: "https://chewie.lat.ope.eng.hashgraph.io"
   API_EP_COMPUTE_ALLOCATION: "api/v1/compute/allocation"
   INSTANCES_QTY: ${{ inputs.instances-qty }}
   INSTANCE_CPU: ${{ inputs.instance-cpu }}
