@@ -32,6 +32,9 @@ on:
         description: "How long (in seconds) to poll for an approved allocation before giving up. Defaults to 3600."
         type: number
     secrets:
+      github-token:
+        required: true
+        description: "GitHub Authorization Token for the workflow"
       chewie-token:
         required: true
         description: "The Chewie API key for the repository."
@@ -88,6 +91,13 @@ jobs:
       network-id: ${{ steps.read-chewie-response.outputs.network-id }}
       owner: ${{ steps.read-chewie-response.outputs.owner }}
     steps:
+      - name: Initialize Github Job
+        uses: pandaswhocode/initialize-github-job@c96d9edf7816b4f333b558f2e07fe81ebf1e822d # v1.3.0
+        with:
+          checkout: "true"
+          checkout-token: ${{ secrets.github-token }}
+          checkout-ref: ${{ inputs.ref }}
+
       - name: Create Chewie Allocation Request
         id: create-allocation-request
         env:
@@ -108,29 +118,36 @@ jobs:
             -j "${{ github.job }}"
           )
           
-          response=$(curl -s -X POST "${HOST}/${API_EP_COMPUTE_ALLOCATION}" \
+          response_and_code=$(curl -sS -X POST "${HOST}/${API_EP_COMPUTE_ALLOCATION}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${REPO_JWT}" \
-            -d "${request_body}")
-          
+            -d "${request_body}" \
+            -w '\n%{http_code}')
+
+          status_code="${response_and_code##*$'\n'}"
+          response_body="${response_and_code%$'\n'*}"
+
           # Valid Responses from Chewie:
           # pending (200): Request accepted, awaiting scheduling/approval (the initial state on create)
           # approved (202): Allocation granted; full detail (namespace, cluster_fqdn, instances, expires_at) is populated
           # denied (410): Request was rejected
-          # canceled (410): Request cancelled before approval  
-          # released (410): Was approved, now released (freed) 
+          # canceled (410): Request cancelled before approval
+          # released (410): Was approved, now released (freed)
           # expired (410): Was approved, now past its expiry
-          
-          # Check chewie headers for status code.
-          status_code=$(echo "${response}" | jq -r '.status_code')
+
           if [[ "${status_code}" != "200" && "${status_code}" != "202" ]]; then
             echo "Chewie allocation request failed. Status code: ${status_code}"
-            echo "Response: ${response}"
+            echo "Response: ${response_body}"
             exit 1
           fi
-          
+
           # Get the ID for the allocation request from the response.
-          allocation_id=$(echo "${response}" | jq -r '.id')
+          allocation_id=$(echo "${response_body}" | jq -r '.id')
+          if [[ -z "${allocation_id}" || "${allocation_id}" == "null" ]]; then
+            echo "Chewie allocation response missing allocation id."
+            echo "Response: ${response_body}"
+            exit 1
+          fi
           echo "allocation-id=${allocation_id}" >> "${GITHUB_OUTPUT}"
 
       - name: Poll for Request Ready
@@ -144,11 +161,14 @@ jobs:
           start_time=$(date +%s)
           status_code="200"
           while [[ "${status_code}" == "200" ]]; do
-            response=$(curl -k -s -X GET "${HOST}/api/v1/compute/allocation/${ALLOCATION_ID}" \
+            response_and_code=$(curl -k -sS -X GET "${HOST}/api/v1/compute/allocation/${ALLOCATION_ID}" \
               -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${REPO_JWT}")
+              -H "Authorization: Bearer ${REPO_JWT}" \
+              -w '\n%{http_code}')
 
-            status_code=$(echo "${response}" | jq -r '.status_code')
+            status_code="${response_and_code##*$'\n'}"
+            response="${response_and_code%$'\n'*}"
+
             if [[ "${status_code}" == "202" ]]; then
               echo "Chewie allocation request approved."
               echo "chewie-response=${response}" >> "${GITHUB_OUTPUT}"
@@ -177,10 +197,20 @@ jobs:
           REQUEST_ID: ${{ steps.create-allocation-request.outputs.allocation-id }}
           CHEWIE_JWT: ${{ secrets.chewie-token }}
         run: |
-          response=$(curl -k -s -X GET "${HOST}/${API_EP_COMPUTE_ALLOCATION}/${REQUEST_ID}" \
+          response_and_code=$(curl -k -sS -X GET "${HOST}/${API_EP_COMPUTE_ALLOCATION}/${REQUEST_ID}" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${CHEWIE_JWT}")
-          
+            -H "Authorization: Bearer ${CHEWIE_JWT}" \
+            -w '\n%{http_code}')
+
+          status_code="${response_and_code##*$'\n'}"
+          response="${response_and_code%$'\n'*}"
+
+          if [[ "${status_code}" != "200" && "${status_code}" != "202" ]]; then
+            echo "Failed to retrieve Chewie allocation. Status code: ${status_code}"
+            echo "Response: ${response}"
+            exit 1
+          fi
+
           # Parse the response to extract the necessary information
           NAMESPACE=$(echo "${response}" | jq -r '.namespace')
           CLUSTER_FQDN=$(echo "${response}" | jq -r '.cluster_fqdn')

@@ -66,11 +66,12 @@ jobs:
       owner: ${{ steps.read-chewie-response.outputs.owner }}
     steps:
       - name: Initialize Job
-        uses: pandaswhocode/initialize-github-job@c392c3e699995ab6030915302d2fc9bffb1e861f # v1.1.0
+        uses: pandaswhocode/initialize-github-job@c96d9edf7816b4f333b558f2e07fe81ebf1e822d # v1.3.0
         with:
           checkout: "true"
           checkout-token: ${{ secrets.github-token }}
           checkout-ref: ${{ inputs.ref }}
+          setup-jq: true
 
       - name: Validate Test Type
         run: |
@@ -79,11 +80,6 @@ jobs:
             echo "::error::Invalid test type: ${{ inputs.test-type }}. Must be one of: ${VALID_TEST_TYPES[*]}"
             exit 1
           fi
-
-      - name: Set up JQ
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
 
       # Once chewie is ready and installed on the network this job will
       # be responsible for making the api calls to chewie with requested

@@ -29,10 +29,15 @@ jobs:
       chewie-jwt: ${{ steps.get-chewie-jwt.outputs.chewie-jwt }}
       chewie-expiration: ${{ steps.get-chewie-jwt.outputs.chewie-expiration }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
       - name: Get Chewie JWT
         id: get-chewie-jwt
         run: |
-          b64_key=$(echo -n "${{ secrets.chewie-key }}" | base64)
+          b64_key=$(echo -n "${{ secrets.chewie-key }}" | base64 -w 0)
           api_path="api/v1/auth/token"
           
           response=$(curl -s -X POST "${{ secrets.chewie-host }}/${api_path}" \

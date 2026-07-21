@@ -1,3 +1,6 @@
+ #!/usr/bin/env bash
+ set -euo pipefail
+
 build_compute_request() {
   local QUANTITY=0
   local CPU=0
