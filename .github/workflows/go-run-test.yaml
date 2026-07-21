@@ -1,0 +1,90 @@
+name: Go Run Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run-app-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Initialize Job
+        uses: pandaswhocode/initialize-github-job@c96d9edf7816b4f333b558f2e07fe81ebf1e822d # v1.3.0
+        with:
+          checkout: "true"
+          checkout-token: ${{ secrets.github-token }}
+          checkout-ref: ${{ github.ref }}
+          setup-go: true
+
+      - name: Run unit tests
+        run: go test ./...
+
+      - name: Run app and validate output
+        run: |
+          output="$(go run .)"
+          test "${output}" = "Hello, world!"
+
+      - name: Call Chewie and get response
+        id: call-chewie
+        uses: .github/workflows/801-read-chewie-response.yaml
+        with:
+          ref: ${{ github.ref }}
+          test-type: "sdpt"
+          test-asset: "9"
+
+      - name: Output Chewie response
+        run: |
+          echo "Namespace: ${{ steps.call-chewie.outputs.namespace }}"
+          echo "FQDN: ${{ steps.call-chewie.outputs.fqdn }}"
+          echo "CN Quantity: ${{ steps.call-chewie.outputs.cn-quantity }}"
+          echo "Aux Quantity: ${{ steps.call-chewie.outputs.aux-quantity }}"
+          echo "CN Tolerations: ${{ steps.call-chewie.outputs.cn-tolerations }}"
+          echo "Aux Tolerations: ${{ steps.call-chewie.outputs.aux-tolerations }}"
+          echo "CN Role: ${{ steps.call-chewie.outputs.cn-role }}"
+          echo "Aux Role: ${{ steps.call-chewie.outputs.aux-role }}"
+          echo "Network ID: ${{ steps.call-chewie.outputs.network-id }}"
+          echo "Owner: ${{ steps.call-chewie.outputs.owner }}"
+
+  run-app-test-prod:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Initialize Job
+        uses: pandaswhocode/initialize-github-job@3be139d343b1a60e1fcfc70f602ee804bbe3495d # v1.1.1
+        with:
+          checkout: "true"
+          checkout-token: ${{ secrets.github-token }}
+          checkout-ref: ${{ github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+
+      - name: Get JWT
+        id: get-chewie-jwt
+        uses: .github/workflows/802-get-chewie-jwt.yaml
+        secrets:
+          chewie-key: ${{ secrets.CHEWIE_REPO_IDENTITY_KEY }}
+          chewie-host: ${{ secrets.CHEWIE_HOST }}
+
+      - name: Validate content exists
+        env:
+          CHEWIE_JWT: ${{ steps.get-chewie-jwt.outputs.jwt }}
+          CHEWIE_EXPIRATION: ${{ steps.get-chewie-jwt.outputs.expiration }}
+        run: |
+          if [[ -z "${CHEWIE_JWT}" ]]; then
+            echo "::error::Chewie JWT is empty. Please check the Chewie key and host."
+            exit 1
+          fi
+          
+          if [[ -z "${CHEWIE_EXPIRATION}" ]]; then
+            echo "::error::Chewie JWT expiration is empty. Please check the Chewie key and host."
+            exit 1
+          fi
+          
+          echo "Chewie JWT (len): ${#CHEWIE_JWT}"
+          echo "Chewie JWT Expiration: ${CHEWIE_EXPIRATION}"
