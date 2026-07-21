@@ -32,7 +32,7 @@ jobs:
     with:
       ref: ${{ github.ref }}
       test-type: "sdpt"
-      test-asset: "9"
+      test-asset: "AdHocSD9"
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
