@@ -13,10 +13,10 @@ on:
     outputs:
       jwt:
         description: "The Chewie JWT for the repository."
-        value: ${{ steps.get-chewie-jwt.outputs.chewie-jwt }}
+        value: ${{ jobs.get-chewie-jwt.outputs.chewie-jwt }}
       expiration:
         description: "The Chewie JWT expiration for the repository."
-        value: ${{ steps.get-chewie-jwt.outputs.chewie-expiration }}
+        value: ${{ jobs.get-chewie-jwt.outputs.chewie-expiration }}
 
 permissions:
   contents: read

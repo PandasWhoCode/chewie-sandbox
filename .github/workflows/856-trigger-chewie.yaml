@@ -27,6 +27,10 @@ on:
         required: false
         description: "The expiration time (in seconds) for the Chewie token. Optional."
         type: number
+      request-timeout:
+        required: false
+        description: "How long (in seconds) to poll for an approved allocation before giving up. Defaults to 3600."
+        type: number
     secrets:
       chewie-token:
         required: true
@@ -66,6 +70,7 @@ env:
   INSTANCE_CPU: ${{ inputs.instance-cpu }}
   INSTANCE_MEMORY_MB: ${{ inputs.instance-memory-mb }}
   DURATION_MINUTES: ${{ inputs.duration-minutes }}
+  REQUEST_TIMEOUT: ${{ inputs.request-timeout }}
 
 jobs:
   create-allocation-request:
@@ -94,7 +99,7 @@ jobs:
             -q "${INSTANCES_QTY}" \
             -c "${INSTANCE_CPU}" \
             -m "${INSTANCE_MEMORY_MB}" \
-            -d "${DURATION}" \
+            -d "${DURATION_MINUTES}" \
             -i "${{ github.run_id }}" \
             -n "${{ github.run_number }}" \
             -a "${{ github.run_attempt }}" \
@@ -134,11 +139,12 @@ jobs:
           REPO_JWT: ${{ secrets.chewie-token }}
           ALLOCATION_ID: ${{ steps.create-allocation-request.outputs.allocation-id }}
         run: |
-          attempt=0
           sleep_interval=2 # seconds
+          timeout_seconds="${REQUEST_TIMEOUT:-3600}"
+          start_time=$(date +%s)
           status_code="200"
           while [[ "${status_code}" == "200" ]]; do
-            response=$(curl -k -I HEAD "${HOST}/api/v1/compute/allocation/1" \
+            response=$(curl -k -s -X GET "${HOST}/api/v1/compute/allocation/${ALLOCATION_ID}" \
               -H "Content-Type: application/json" \
               -H "Authorization: Bearer ${REPO_JWT}")
 
@@ -149,7 +155,13 @@ jobs:
               # break the loop since we got an approved response
               break
             elif [[ "${status_code}" == "200" ]]; then
-              echo "Chewie allocation request pending. Attempt $((attempt + 1))/${max_attempts}. Retrying in ${sleep_interval}s..."
+              elapsed=$(( $(date +%s) - start_time ))
+              echo "Chewie allocation request pending. Elapsed: ${elapsed}s / ${timeout_seconds}s. Retrying in ${sleep_interval}s..."
+              if [[ "${elapsed}" -ge "${timeout_seconds}" ]]; then
+                echo "Chewie allocation request timed out after ${timeout_seconds}s."
+                exit 1
+              fi
+              sleep "${sleep_interval}"
             else
               echo "Chewie allocation request failed. Status code: ${status_code}"
               echo "Response: ${response}"
@@ -162,23 +174,23 @@ jobs:
       - name: Output Chewie Response
         id: read-chewie-response
         env:
-          REQUEST_ID=${{ steps.create-allocation-request.outputs.allocation-id }}
-          CHEWIE_JWT=${{ secrets.chewie-token }}
+          REQUEST_ID: ${{ steps.create-allocation-request.outputs.allocation-id }}
+          CHEWIE_JWT: ${{ secrets.chewie-token }}
         run: |
-          response=$(curl -k -s HEAD "${HOST}/${API_EP_COMPUTE_ALLOCATION}/${REQUEST_ID}" \
+          response=$(curl -k -s -X GET "${HOST}/${API_EP_COMPUTE_ALLOCATION}/${REQUEST_ID}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${CHEWIE_JWT}")
           
           # Parse the response to extract the necessary information
           NAMESPACE=$(echo "${response}" | jq -r '.namespace')
           CLUSTER_FQDN=$(echo "${response}" | jq -r '.cluster_fqdn')
-          CN_QTY=$(echo "${response}" | jq -r ".instances[] | select(.group==\"consensus-nodes\") | .spec.quantity")
-          CN_TOLERATIONS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"consensus-nodes\") | .tolerations")
-          CN_LABELS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"consensus-nodes\") | .labels")
+          CN_QTY=$(echo "${response}" | jq -r ".instances[] | select(.group==\"cn-nodes\") | .spec.quantity")
+          CN_TOLERATIONS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"cn-nodes\") | .tolerations")
+          CN_LABELS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"cn-nodes\") | .labels")
           CN_ROLE="$(jq -r '."solo.hashgraph.io/role"' <<< "${CN_LABELS}")"
-          AUX_QTY=$(echo "${response}" | jq -r ".instances[] | select(.group==\"auxiliary-nodes\") | .spec.quantity")
-          AUX_TOLERATIONS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"auxiliary-nodes\") | .tolerations")
-          AUX_LABELS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"auxiliary-nodes\") | .labels")
+          AUX_QTY=$(echo "${response}" | jq -r ".instances[] | select(.group==\"aux-nodes\") | .spec.quantity")
+          AUX_TOLERATIONS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"aux-nodes\") | .tolerations")
+          AUX_LABELS=$(echo "${response}" | jq -c ".instances[] | select(.group==\"aux-nodes\") | .labels")
           AUX_ROLE="$(jq -r '."solo.hashgraph.io/role"' <<< "${AUX_LABELS}")"
           NETWORK_ID="$(jq -r '."solo.hashgraph.io/network-id"' <<< "${CN_LABELS}")"
           OWNER="$(jq -r '."solo.hashgraph.io/owner"' <<< "${CN_LABELS}")"
