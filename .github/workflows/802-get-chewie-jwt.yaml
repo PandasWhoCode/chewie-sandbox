@@ -36,11 +36,13 @@ jobs:
 
       - name: Get Chewie JWT
         id: get-chewie-jwt
+        env:
+          HOST: "https://chewie.lat.ope.eng.hashgraph.io"
         run: |
           b64_key=$(echo -n "${{ secrets.chewie-key }}" | base64 -w 0)
           api_path="api/v1/auth/token"
           
-          response=$(curl -s -X POST "${{ secrets.chewie-host }}/${api_path}" \
+          response=$(curl -s -X POST "${HOST}/${api_path}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${b64_key}")
           
