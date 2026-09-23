@@ -51,7 +51,7 @@ dependencies.constraints {
     api("com.github.spotbugs:spotbugs-annotations:4.9.8") {
         because("com.github.spotbugs.annotations")
     }
-    api("com.google.guava:guava:33.6.0-jre") { because("com.google.common") }
+    api("com.google.guava:guava:33.7.1-jre") { because("com.google.common") }
     api("com.google.jimfs:jimfs:1.3.1") { because("com.google.common.jimfs") }
     api("com.google.protobuf:protobuf-java:$protobuf") { because("com.google.protobuf") }
     api("com.google.protobuf:protobuf-java-util:$protobuf") { because("com.google.protobuf.util") }
