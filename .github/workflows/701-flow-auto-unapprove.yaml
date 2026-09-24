@@ -19,7 +19,7 @@ permissions:
 jobs:
   auto-unapprove:
     name: Auto Unapprove PR
-    runs-on: hl-cn-default-lin-sm
+    runs-on: ubuntu-latest
     steps:
       - name: Initialize Job
         uses: pandaswhocode/initialize-github-job@5dbfbc4329ceab48a57d983325dadbd3ec8123e9 # v1.2.2
