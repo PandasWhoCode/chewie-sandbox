@@ -7,13 +7,6 @@ on:
       - ready_for_review
       - reopened
       - synchronize
-  # Re-evaluate when a review lands, otherwise the required check stays red
-  # after a code owner approves.
-  pull_request_review:
-    types:
-      - submitted
-      - dismissed
-      - edited
 
 defaults:
   run:
