@@ -30,7 +30,7 @@ jobs:
           node-version: "24"
 
       - name: Dismiss Reviews from Code Owners and Teams
-        uses: PandasWhoCode/auto-unapprove-plus@47c9551d5ae1a82a7bf751cad68096ca414e331f # feat/org-placeholder
+        uses: PandasWhoCode/auto-unapprove-plus@eb5be4aa789d603cc62320ae3540aca36d3ab567 # main (2026-09-25)
         with:
           github-token: ${{ secrets.GH_AUTO_UNAPPROVE_TOKEN }}
           team-token: ${{ secrets.TEAM_MEMBERS_TOKEN }}

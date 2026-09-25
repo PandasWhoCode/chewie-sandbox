@@ -43,7 +43,7 @@ jobs:
           checkout-fetch-depth: "0"
 
       - name: Check Codeowner Approvals
-        uses: PandasWhoCode/codeowners-plus@12ffa17ebe948fd61f5dc071b004914ea9e258a6 # feat/org-placeholder-github-codeowners
+        uses: PandasWhoCode/codeowners-plus@cb1bb6677787a62d2fac1ff288f515756d045b51 # main (2026-09-25)
         with:
           github-token: ${{ secrets.GH_AUTO_UNAPPROVE_TOKEN }}
           team-token: ${{ secrets.TEAM_MEMBERS_TOKEN }}
