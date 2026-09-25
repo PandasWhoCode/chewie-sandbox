@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: Apache-2.0
+name: "702: [FLOW] Codeowners Plus"
+on:
+  pull_request:
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
+  # Re-evaluate when a review lands, otherwise the required check stays red
+  # after a code owner approves.
+  pull_request_review:
+    types:
+      - submitted
+      - dismissed
+      - edited
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: codeowners-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  codeowners:
+    name: Codeowners Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initialize Job
+        uses: pandaswhocode/initialize-github-job@5dbfbc4329ceab48a57d983325dadbd3ec8123e9 # v1.2.2
+        with:
+          checkout: "true"
+          checkout-token: "${{ secrets.GITHUB_TOKEN }}"
+          # codeowners-plus reads CODEOWNERS from the base ref and diffs
+          # base..head with local git, so both commits must be present,
+          # which is why fetch-depth is 0 rather than the default shallow clone.
+          checkout-ref: "${{ github.event.pull_request.head.sha }}"
+          checkout-fetch-depth: "0"
+
+      - name: Check Codeowner Approvals
+        uses: PandasWhoCode/codeowners-plus@cb1bb6677787a62d2fac1ff288f515756d045b51 # main (2026-09-25)
+        with:
+          github-token: ${{ secrets.GH_AUTO_UNAPPROVE_TOKEN }}
+          team-token: ${{ secrets.TEAM_MEMBERS_TOKEN }}
+          pr: ${{ github.event.pull_request.number }}
+          github-codeowners-file: ".github/CODEOWNERS"
+          verbose: "true"
