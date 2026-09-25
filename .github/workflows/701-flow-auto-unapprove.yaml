@@ -37,4 +37,4 @@ jobs:
           dry-run: "false"
           code-owners-file: ".github/CODEOWNERS"
           target-branch: ${{ github.event.pull_request.base.ref }}
-          team-start-with: "@hiero-ledger/"
+          team-start-with: "@PandasWhoCode/"
