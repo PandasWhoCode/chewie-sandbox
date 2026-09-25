@@ -38,7 +38,8 @@ jobs:
           checkout: "true"
           checkout-token: "${{ secrets.GITHUB_TOKEN }}"
           # codeowners-plus reads CODEOWNERS from the base ref and diffs
-          # base..head with local git, so both commits must be present.
+          # base..head with local git, so both commits must be present,
+          # which is why fetch-depth is 0 rather than the default shallow clone.
           checkout-ref: "${{ github.event.pull_request.head.sha }}"
           checkout-fetch-depth: "0"
 
