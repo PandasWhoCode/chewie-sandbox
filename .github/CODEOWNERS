@@ -185,7 +185,7 @@
 gradlew                                             @hiero-ledger/github-maintainers
 gradlew.bat                                         @hiero-ledger/github-maintainers
 **/build-logic/                                     @hiero-ledger/github-maintainers
-**/gradle.*                                         @hiero-ledger/github-maintainers
+**/gradle.*                                         @PandasWhoCode/platform-ci
 
 # Codacy Tool Configurations
 /config/                                            @hiero-ledger/github-maintainers
