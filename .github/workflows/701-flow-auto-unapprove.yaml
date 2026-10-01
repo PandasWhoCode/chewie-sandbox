@@ -30,14 +30,14 @@ jobs:
           node-version: "24"
 
       - name: Dismiss Reviews from Code Owners and Teams
-        uses: PandasWhoCode/auto-unapprove-plus@eb5be4aa789d603cc62320ae3540aca36d3ab567 # main (2026-09-25)
+        uses: PandasWhoCode/auto-unapprove-plus@5455cb847dd39759565013e069268123f31c8549 # main (2026-10-01)
         with:
           github-token: ${{ secrets.GH_AUTO_UNAPPROVE_TOKEN }}
           team-token: ${{ secrets.TEAM_MEMBERS_TOKEN }}
           pr-number: ${{ github.event.pull_request.number }}
           dry-run: "false"
-          code-owners-file: ".github/CODEOWNERS"
+          code-owners-file: ".codeowners"
           target-branch: ${{ github.event.pull_request.base.ref }}
-          # "@%/" expands to this repository's organization, matching the
-          # "@%/platform-ci" entries in CODEOWNERS.
-          team-start-with: "@%/"
+          # "%" expands to "@<this repository's organization>/", matching the
+          # "%platform-ci" entries in .codeowners.
+          team-start-with: "%"
